@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מעבדת הזמן: בדיקת מעטפות חנוכה</title>
+    <style>
+        :root {
+            --bg-color: #1a0f08;
+            --panel-bg: #2d1a0e;
+            --accent-gold: #d4af37;
+            --accent-glow: #ffb700;
+            --text-main: #f4e8c1;
+            --danger: #cf2222;
+            --success: #2ea043;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--panel-bg);
+            border: 3px solid var(--accent-gold);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            margin-bottom: 25px;
+            color: #d1b899;
+        }
+
+        /* Menorah display */
+        .menorah-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #4a3520;
+        }
+
+        .candle-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .flame {
+            width: 16px;
+            height: 24px;
+            background: #444;
+            border-radius: 50% 50% 20% 20%;
+            margin-bottom: 5px;
+            transition: all 0.5s ease;
+        }
+
+        .candle-slot.active .flame {
+            background: var(--accent-glow);
+            box-shadow: 0 0 12px var(--accent-glow);
+            animation: flicker 1.5s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(1.1); opacity: 1; filter: brightness(1.2); }
+        }
+
+        .candle-box {
+            width: 22px;
+            height: 35px;
+            background: #c29b61;
+            border: 1px solid #8c6738;
+        }
+
+        /* Envelope / Code Input Section */
+        .envelope-selector {
+            margin-bottom: 20px;
+        }
+
+        select {
+            background: #110804;
+            color: var(--accent-gold);
+            border: 2px solid var(--accent-gold);
+            padding: 8px 15px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .code-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .code-digit {
+            width: 50px;
+            height: 60px;
+            font-size: 2rem;
+            text-align: center;
+            background: #110804;
+            color: var(--accent-gold);
+            border: 2px solid var(--accent-gold);
+            border-radius: 8px;
+        }
+
+        button {
+            background-color: var(--accent-gold);
+            color: #1a0f08;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--accent-glow);
+        }
+
+        button:disabled {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            display: none;
+            text-align: right;
+        }
+
+        .error-box {
+            background-color: rgba(207, 34, 34, 0.2);
+            border: 1px solid var(--danger);
+            color: #ff9f9f;
+        }
+
+        .success-box {
+            background-color: rgba(46, 160, 67, 0.2);
+            border: 1px solid var(--success);
+            color: #8aff9b;
+        }
+
+        .kappa-btn {
+            background-color: #8957e5;
+            color: white;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .kappa-btn:hover {
+            background-color: #986ee2;
+        }
+
+        .lockout-display {
+            color: var(--danger);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>מעבדת הזמן: בדיקת מעטפות חנוכה</h1>
+    <div class="subtitle">בחרו את המעטפה שלכם והזינו את 3 הספרות</div>
+
+    <!-- Menorah Status Display (9 Candles) -->
+    <div class="menorah-container" id="menorah"></div>
+
+    <!-- Envelope Selector -->
+    <div class="envelope-selector">
+        <label for="env-select">בחר מעטפה:</label>
+        <select id="env-select" onchange="changeEnvelope()">
+            <option value="0">מעטפה 1 (נרות 1-3)</option>
+            <option value="1">מעטפה 2 (נרות 4-6)</option>
+            <option value="2">מעטפה 3 (נרות 7-9)</option>
+        </select>
+    </div>
+
+    <!-- Input Form -->
+    <div id="game-form">
+        <div class="input-group">
+            <div class="code-inputs">
+                <input type="text" maxlength="1" class="code-digit" id="digit1" oninput="moveToNext(this, 'digit2')">
+                <input type="text" maxlength="1" class="code-digit" id="digit2" oninput="moveToNext(this, 'digit3')">
+                <input type="text" maxlength="1" class="code-digit" id="digit3" oninput="checkSubmit(event)">
+            </div>
+        </div>
+        <button id="submit-btn" onclick="validateCode()">בדוק קוד</button>
+    </div>
+
+    <!-- Feedback Area -->
+    <div id="feedback"></div>
+    <button id="kappa-action-btn" class="kappa-btn" onclick="callKappa()">קרא לקאפה האלפקה! 🦙</button>
+    <div id="lockout-display" class="lockout-display"></div>
+</div>
+
+<script>
+    // הגדרת הקודים המדויקים לפי ההנחיות
+    const envelopes = [
+        { id: 1, name: "מעטפה 1", code: ["8", "4", "3"] },
+        { id: 2, name: "מעטפה 2", code: ["4", "6", "3"] },
+        { id: 3, name: "מעטפה 3", code: ["0", "5", "6"] }
+    ];
+
+    let failedAttempts = {}; // מעקב ניסיונות לכל מעטפה בנפרד
+    let lockoutTimeRemaining = 0;
+    let lockoutInterval = null;
+
+    function initMenorah() {
+        const menorah = document.getElementById('menorah');
+        menorah.innerHTML = '';
+        for (let i = 1; i <= 9; i++) {
+            menorah.innerHTML += `
+                <div class="candle-slot" id="candle-${i}">
+                    <div class="flame"></div>
+                    <div class="candle-box"></div>
+                    <span>${i}</span>
+                </div>
+            `;
+        }
+    }
+
+    function moveToNext(current, nextFieldId) {
+        if (current.value.length >= 1) {
+            document.getElementById(nextFieldId).focus();
+        }
+    }
+
+    function checkSubmit(event) {
+        if (event.key === 'Enter') {
+            validateCode();
+        }
+    }
+
+    function changeEnvelope() {
+        document.getElementById('feedback').style.display = 'none';
+        document.getElementById('kappa-action-btn').style.display = 'none';
+        document.getElementById('digit1').value = '';
+        document.getElementById('digit2').value = '';
+        document.getElementById('digit3').value = '';
+    }
+
+    function validateCode() {
+        if (lockoutTimeRemaining > 0) return;
+
+        const envIndex = document.getElementById('env-select').value;
+        if (!failedAttempts[envIndex]) failedAttempts[envIndex] = 0;
+
+        const d1 = document.getElementById('digit1').value.trim();
+        const d2 = document.getElementById('digit2').value.trim();
+        const d3 = document.getElementById('digit3').value.trim();
+        const userCode = [d1, d2, d3];
+
+        const feedbackBox = document.getElementById('feedback');
+        const kappaBtn = document.getElementById('kappa-action-btn');
+        const currentEnv = envelopes[envIndex];
+
+        feedbackBox.style.display = 'block';
+        kappaBtn.style.display = 'none';
+
+        // בדיקה האם הוזנו ספרות
+        const filledCount = userCode.filter(d => d !== "").length;
+        if (filledCount === 0) {
+            feedbackBox.className = 'error-box';
+            feedbackBox.innerHTML = `⚠️ נא להזין לפחות ספרה אחת.`;
+            return;
+        }
+
+        // בדיקה פרטנית של כל ספרה שהוזנה ומציאת מי לא תקין
+        let incorrectDetails = [];
+        let allCorrect = true;
+
+        for (let i = 0; i < 3; i++) {
+            if (userCode[i] !== "") {
+                if (userCode[i] !== currentEnv.code[i]) {
+                    incorrectDetails.push(`• הספרה ה-${i + 1} ("${userCode[i]}") אינה תקינה.`);
+                    allCorrect = false;
+                }
+            } else {
+                incorrectDetails.push(`• הספרה ה-${i + 1} לא הוזנה.`);
+                allCorrect = false;
+            }
+        }
+
+        if (allCorrect) {
+            // הצלחה! איפוס שגיאות למעטפה זו והדלקת הנרות
+            failedAttempts[envIndex] = 0;
+            feedbackBox.className = 'success-box';
+            feedbackBox.innerHTML = `🎉 כל הכבוד! הקוד של ${currentEnv.name} מדויק! נרות ${(envIndex * 3) + 1} עד ${(parseInt(envIndex) + 1) * 3} נדלקו בהצלחה!`;
+
+            for (let i = 1; i <= 3; i++) {
+                const candleIdx = (parseInt(envIndex) * 3) + i;
+                document.getElementById(`candle-${candleIdx}`).classList.add('active');
+            }
+        } else {
+            failedAttempts[envIndex]++;
+            const remainingTries = 3 - failedAttempts[envIndex];
+
+            if (failedAttempts[envIndex] >= 3) {
+                startLockout();
+                return;
+            }
+
+            feedbackBox.className = 'error-box';
+            let msg = `❌ נמצאו שגיאות בקוד שהוזן:<br>` + incorrectDetails.join('<br>');
+            
+            if (remainingTries === 1) {
+                msg += `<br><br>⚠️ <strong>שים לב!</strong> נסיון אחד נוסף שגוי והבדיקה תינעל ל-5 דקות!`;
+            } else {
+                msg += `<br><br>נותרו לך עוד ${remainingTries} ניסיונות לפני נעילה. מתקשים? קיראו לקאפה לעזרה!`;
+                kappaBtn.style.display = 'inline-block';
+            }
+            feedbackBox.innerHTML = msg;
+        }
+    }
+
+    function callKappa() {
+        alert("🦙 קאפה האלפקה הבחין בקריאתכם ומגיע מיד לעזרתכם עם סביבון הרמזים (נ-ג-ה-פ)! הרמו את היד והמתינו למורה.");
+    }
+
+    function startLockout() {
+        lockoutTimeRemaining = 300; // 5 דקות
+        const feedbackBox = document.getElementById('feedback');
+        const lockoutDisplay = document.getElementById('lockout-display');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        submitBtn.disabled = true;
+        feedbackBox.className = 'error-box';
+        feedbackBox.innerHTML = `🔒 עברת את מכסת הניסיונות המותרת! הבדיקה ננעלה ל-5 דקות.`;
+        document.getElementById('kappa-action-btn').style.display = 'none';
+
+        lockoutInterval = setInterval(() => {
+            lockoutTimeRemaining--;
+            let mins = Math.floor(lockoutTimeRemaining / 60);
+            let secs = lockoutTimeRemaining % 60;
+            lockoutDisplay.innerHTML = `⏱️ זמן המתנה לשיחרור הנעילה: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            if (lockoutTimeRemaining <= 0) {
+                clearInterval(lockoutInterval);
+                lockoutDisplay.innerHTML = '';
+                submitBtn.disabled = false;
+                const envIndex = document.getElementById('env-select').value;
+                failedAttempts[envIndex] = 0;
+                feedbackBox.style.display = 'none';
+            }
+        }, 1000);
+    }
+
+    window.onload = initMenorah;
+</script>
+
+</body>
+</html>
